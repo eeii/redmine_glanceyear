@@ -1,5 +1,4 @@
 class GlanceyearController < ApplicationController
-  unloadable
   before_action :find_project
 
   def show
@@ -8,6 +7,7 @@ class GlanceyearController < ApplicationController
   end
 
   private
+
   def find_project
     project_id = (params[:issue] && params[:issue][:project_id]) || params[:project_id]
     @project = Project.find(project_id)
@@ -16,7 +16,7 @@ class GlanceyearController < ApplicationController
   end
 
   def activities
-    @include_subproject = params[:include_subproject].blank? ? false : params[:include_subproject]
+    @include_subproject = params[:include_subproject].presence || false
     @author_id = params[:author_id] || ''
     options = {
       :project => @project,
@@ -25,14 +25,14 @@ class GlanceyearController < ApplicationController
     options.merge!(:author => User.find(@author_id)) unless @author_id.blank?
 
     @activity = Redmine::Activity::Fetcher.new(User.current, options)
-    events = @activity.events(1.years.ago, Date.today.since(1.days))
+    events = @activity.events(1.year.ago, Date.today.since(1.day))
     count_map = {}
     events.each do |event|
       [:created_on, :committed_on].each do |created_on|
         if event.respond_to?(created_on)
-            date_formatted = event.send(created_on).strftime("%Y-%-m-%-d")
-            count_map[date_formatted] = 0 unless count_map[date_formatted]
-            count_map[date_formatted] += 1
+          date_formatted = event.send(created_on).strftime("%Y-%-m-%-d")
+          count_map[date_formatted] = 0 unless count_map[date_formatted]
+          count_map[date_formatted] += 1
         end
       end
     end
